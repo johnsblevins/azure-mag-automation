@@ -37,8 +37,6 @@ catch {
     }
 }
 
-$vms = get-azurermvm
-
 $vms_detail = @()
 
 $vms = get-azurermvm
@@ -63,7 +61,14 @@ foreach ($vm in $vms)
             {
                                 $vm_detail | add-member -type NoteProperty -name ring -value 99
             }
-
+            if ( $vmtags.ContainsKey('Requires') )
+            {
+                $vm_detail | add-member -type NoteProperty -name requires -value $vmtags.Requires
+            }
+            else
+            {
+                                $vm_detail | add-member -type NoteProperty -name requires -value ""
+            }
             $vms_detail += $vm_detail
         }
 
@@ -75,6 +80,14 @@ $vms_detail = $vms_detail | sort ring
 
 foreach ($vm_detail in $vms_detail )
 {
+    if ( $vm_detail.Requires )
+    {   
+        $required_solutions = $vm_detail.Requires -split (",") 
+        foreach($required_solution in $required_solutions)
+        {
+           .\Start-MagSolution.ps1 -solution $required_solution
+        }
+    }
     Start-AzureRmVM -Name $vm_detail.vmname -ResourceGroupName $vm_detail.rgname
 }
 
